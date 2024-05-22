@@ -25,7 +25,7 @@ impl Vehicle {
     pub fn move_car(&mut self){
         match self.direction {
             Direction::North => {
-                self.x += 1; 
+                self.y -= 1; 
                 // self.x = 300;
             }
             Direction::South => {

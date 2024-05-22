@@ -43,16 +43,16 @@ fn main() {
                 sdl2::event::Event::KeyDown { keycode, .. } => {
                     match keycode {
                         Some(sdl2::keyboard::Keycode::Up) => {
-                            vehicles.push(Vehicle::new(Direction::North, 5, 500, 0));
+                            vehicles.push(Vehicle::new(Direction::North, 5, 565, 900));
                         },
                         Some(sdl2::keyboard::Keycode::Down) => {
-                            vehicles.push(Vehicle::new(Direction::South, 5, 90, 300));
+                            vehicles.push(Vehicle::new(Direction::South, 5, 410, 00));
                         },
                         Some(sdl2::keyboard::Keycode::Right) => {
-                            vehicles.push(Vehicle::new(Direction::East, 5, 0, 400));
+                            vehicles.push(Vehicle::new(Direction::East, 5, 0, 445));
                         },
                         Some(sdl2::keyboard::Keycode::Left) => {
-                            vehicles.push(Vehicle::new(Direction::West, 5, 1000, 400));
+                            vehicles.push(Vehicle::new(Direction::West, 5, 1000, 310));
                         },
                         _ => {}
                     }
@@ -75,11 +75,18 @@ fn main() {
                 Direction::East => &vehicle_texture_right,
                 Direction::West => &vehicle_texture_left,
             };
-
-            let vehicle_rect = Rect::new(vehicle.x, vehicle.y, 20, 40);
+        
+            // Set different dimensions based on direction
+            let (width, height) = match vehicle.direction {
+                Direction::North | Direction::South => (30, 60),
+                Direction::East | Direction::West => (60, 30),
+            };
+        
+            let vehicle_rect = Rect::new(vehicle.x, vehicle.y, width, height);
             canvas.copy(vehicle_texture, None, vehicle_rect).unwrap();
             vehicle.move_car();
         }
+        
 
         canvas.present();
     }
