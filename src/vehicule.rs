@@ -10,15 +10,17 @@ pub struct Vehicle {
     pub velocity: i32,
     pub x: i32,
     pub y: i32,
+    pub turn_counter: i32,
 }
 
 impl Vehicle {
-    pub fn new(direction: Direction, velocity: i32, x: i32, y: i32) -> Self {
+    pub fn new(direction: Direction, velocity: i32, x: i32, y: i32,turn_counter: i32,) -> Self {
         Self {
             direction,
             velocity,
             x,
             y,
+            turn_counter
         }
     }
 

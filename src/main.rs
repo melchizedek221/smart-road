@@ -5,7 +5,12 @@ extern crate sdl2;
 use sdl2::pixels::Color;
 use sdl2::image::{self, LoadTexture};
 use sdl2::rect::Rect;
+use sdl2::render::Texture;
+use sdl2::render::Canvas;
+use sdl2::video::Window;
 use vehicule::{Vehicle, Direction};
+
+const OFFSETS: [i32; 3] = [0, 25, -25];
 
 fn main() {
     let sdl_context = sdl2::init().unwrap();
@@ -34,6 +39,13 @@ fn main() {
     // Vector to store vehicles
     let mut vehicles: Vec<Vehicle> = Vec::new();
 
+    // Variables to keep track of the last used offset index for each direction
+    let mut offset_index_x = 0;
+    let mut offset_index_y = 0;
+
+    // Track sequence for vehicles going south
+    let mut south_sequence = 0;
+
     // Main loop
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
@@ -43,16 +55,21 @@ fn main() {
                 sdl2::event::Event::KeyDown { keycode, .. } => {
                     match keycode {
                         Some(sdl2::keyboard::Keycode::Up) => {
-                            vehicles.push(Vehicle::new(Direction::North, 5, 565, 900));
+                            vehicles.push(Vehicle::new(Direction::North, 5, 565 + OFFSETS[offset_index_y as usize], 900, 0));
+                            offset_index_y = (offset_index_y + 1) % 3;
                         },
                         Some(sdl2::keyboard::Keycode::Down) => {
-                            vehicles.push(Vehicle::new(Direction::South, 5, 410, 00));
+                            vehicles.push(Vehicle::new(Direction::South, 5, 410 + OFFSETS[offset_index_y as usize], 0, south_sequence));
+                            offset_index_y = (offset_index_y + 1) % 3;
+                            south_sequence = (south_sequence + 1) % 3;
                         },
                         Some(sdl2::keyboard::Keycode::Right) => {
-                            vehicles.push(Vehicle::new(Direction::East, 5, 0, 445));
+                            vehicles.push(Vehicle::new(Direction::East, 5, 0, 445 + OFFSETS[offset_index_x as usize], 0));
+                            offset_index_x = (offset_index_x + 1) % 3;
                         },
                         Some(sdl2::keyboard::Keycode::Left) => {
-                            vehicles.push(Vehicle::new(Direction::West, 5, 1000, 310));
+                            vehicles.push(Vehicle::new(Direction::West, 5, 1000, 445 + OFFSETS[offset_index_x as usize], 0));
+                            offset_index_x = (offset_index_x + 1) % 3;
                         },
                         _ => {}
                     }
@@ -69,24 +86,30 @@ fn main() {
 
         // Update and draw all vehicles
         for vehicle in &mut vehicles {
-            let vehicle_texture = match vehicle.direction {
-                Direction::North => &vehicle_texture_up,
-                Direction::South => &vehicle_texture_down,
-                Direction::East => &vehicle_texture_right,
-                Direction::West => &vehicle_texture_left,
+            let (vehicle_texture, angle) = match vehicle.direction {
+                Direction::North => (&vehicle_texture_up, 0.0),
+                Direction::South => {
+                    match vehicle.turn_counter {
+                        0 if vehicle.y > 500 => (&vehicle_texture_right, 90.0),  // Turn right
+                        2 if vehicle.y > 500 => (&vehicle_texture_left, -90.0), // Turn left
+                        _ => (&vehicle_texture_down, 0.0),
+                    }
+                },
+                Direction::East => (&vehicle_texture_right, 0.0),
+                Direction::West => (&vehicle_texture_left, 0.0),
             };
-        
+
             // Set different dimensions based on direction
             let (width, height) = match vehicle.direction {
-                Direction::North | Direction::South => (30, 60),
-                Direction::East | Direction::West => (60, 30),
+                Direction::North | Direction::South => (20, 50),
+                Direction::East | Direction::West => (50, 20),
             };
-        
-            let vehicle_rect = Rect::new(vehicle.x, vehicle.y, width, height);
-            canvas.copy(vehicle_texture, None, vehicle_rect).unwrap();
+
             vehicle.move_car();
+
+            let vehicle_rect = Rect::new(vehicle.x, vehicle.y, width, height);
+            canvas.copy_ex(vehicle_texture, None, vehicle_rect, angle, None, false, false).unwrap();
         }
-        
 
         canvas.present();
     }
