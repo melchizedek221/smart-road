@@ -1,89 +1,90 @@
-mod vehicule;
+use sdl2::{self, image::LoadTexture};
 
-extern crate sdl2;
-
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use sdl2::image::{self, LoadTexture};
-use sdl2::rect::Rect;
-use vehicule::{Vehicle, Direction};
+// use sdl2::rect::Rect;
+use std::time::Duration;
 
-fn main() {
+// mod map;
+// use map::draw_map;
+
+
+mod cars;
+use cars::handle_keyboard_event;
+
+mod lane;
+use lane::{Lane, Cross};
+
+pub fn main() {
+    const WIDTH: u32 = 800;
+    const HEIGHT: u32 = 800;
+    const VEHICULE_WIDTH: u32 = 25;
+    const VEHICULE_HEIGHT: i32 = 50;
+    const SAFETY_DISTANCE: i32 = 25;
+
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-    let window = video_subsystem.window("SMART____ROAD", 1000, 800)
+    let window = video_subsystem
+        .window("road intersection", WIDTH, HEIGHT)
         .position_centered()
         .build()
         .unwrap();
 
     let mut canvas = window.into_canvas().build().unwrap();
 
-    // Initialize SDL2_image
-    image::init(image::InitFlag::PNG | image::InitFlag::JPG).unwrap();
+    canvas.set_draw_color(Color::RGB(0, 255, 255));
+    canvas.clear();
 
-    // Load the background image
+    let mut lanes = vec![
+        Lane::new(SAFETY_DISTANCE, Cross::First),
+        Lane::new(SAFETY_DISTANCE, Cross::Second),
+        Lane::new(SAFETY_DISTANCE, Cross::Third),
+        Lane::new(SAFETY_DISTANCE, Cross::Fourth),
+    ];
+
+    let mut id = 0;
+
+    //adding bg img instead of color
     let texture_creator = canvas.texture_creator();
     let background_texture = texture_creator.load_texture("./assets/road.jpg").unwrap();
-
-    // Load the vehicle textures
-    let vehicle_texture_up = texture_creator.load_texture("./assets/car-up.png").unwrap();
-    let vehicle_texture_down = texture_creator.load_texture("./assets/car-down.png").unwrap();
-    let vehicle_texture_left = texture_creator.load_texture("./assets/car-left.png").unwrap();
-    let vehicle_texture_right = texture_creator.load_texture("./assets/car-right.png").unwrap();
-
-    // Vector to store vehicles
-    let mut vehicles: Vec<Vehicle> = Vec::new();
-
-    // Main loop
+    
+    canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
+    let mut i = 0;
     'running: loop {
+        i = (i + 1) % 255;
+        canvas.set_draw_color(Color::RGB(55, 64, 5));
+        canvas.clear();
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit {..} => break 'running,
-                sdl2::event::Event::KeyDown { keycode, .. } => {
-                    match keycode {
-                        Some(sdl2::keyboard::Keycode::Up) => {
-                            vehicles.push(Vehicle::new(Direction::North, 5, 500, 0));
-                        },
-                        Some(sdl2::keyboard::Keycode::Down) => {
-                            vehicles.push(Vehicle::new(Direction::South, 5, 90, 300));
-                        },
-                        Some(sdl2::keyboard::Keycode::Right) => {
-                            vehicles.push(Vehicle::new(Direction::East, 5, 0, 400));
-                        },
-                        Some(sdl2::keyboard::Keycode::Left) => {
-                            vehicles.push(Vehicle::new(Direction::West, 5, 1000, 400));
-                        },
-                        _ => {}
-                    }
-                },
-                _ => {}
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => break 'running,
+                _ => {
+                    id += 1;
+                    handle_keyboard_event(&event, &mut lanes, WIDTH as i32, HEIGHT as i32, VEHICULE_WIDTH as i32, id);
+                }
             }
         }
 
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
-
+        // The rest of the game loop goes here...
+        
         // Copy the texture to the canvas
         canvas.copy(&background_texture, None, None).unwrap();
 
-        // Update and draw all vehicles
-        for vehicle in &mut vehicles {
-            let vehicle_texture = match vehicle.direction {
-                Direction::North => &vehicle_texture_up,
-                Direction::South => &vehicle_texture_down,
-                Direction::East => &vehicle_texture_right,
-                Direction::West => &vehicle_texture_left,
-            };
-
-            let vehicle_rect = Rect::new(vehicle.x, vehicle.y, 20, 40);
-            canvas.copy(vehicle_texture, None, vehicle_rect).unwrap();
-            vehicle.move_car();
-        }
+        // map
+        // draw_map(&mut canvas, WIDTH as i32, HEIGHT as i32, VEHICULE_WIDTH as i32);
+        let copy_lanes =&mut lanes.clone();
+        for lane in &mut lanes {
+            lane.update(&mut canvas, WIDTH as i32, HEIGHT as i32, VEHICULE_WIDTH as i32, VEHICULE_HEIGHT,copy_lanes);
+        };
 
         canvas.present();
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
-
-    // Clean up SDL2_image
-    // image::quit();
 }
