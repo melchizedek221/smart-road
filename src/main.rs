@@ -1,90 +1,130 @@
-use sdl2::{self, image::LoadTexture};
-
+mod layout;
+mod traffic;
+use layout::*;
+use rand::Rng;
 use sdl2::event::Event;
+use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-// use sdl2::rect::Rect;
 use std::time::Duration;
+use traffic::*;
 
-// mod map;
-// use map::draw_map;
-
-
-mod cars;
-use cars::handle_keyboard_event;
-
-mod lane;
-use lane::{Lane, Cross};
-
-pub fn main() {
-    const WIDTH: u32 = 800;
-    const HEIGHT: u32 = 800;
-    const VEHICULE_WIDTH: u32 = 25;
-    const VEHICULE_HEIGHT: i32 = 50;
-    const SAFETY_DISTANCE: i32 = 25;
-
+fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
     let window = video_subsystem
-        .window("road intersection", WIDTH, HEIGHT)
+        .window("smart-road", 800, 800)
         .position_centered()
         .build()
         .unwrap();
-
     let mut canvas = window.into_canvas().build().unwrap();
 
-    canvas.set_draw_color(Color::RGB(0, 255, 255));
+    canvas.set_draw_color(Color::WHITE);
+    let (width, height) = canvas.output_size().unwrap();
     canvas.clear();
-
-    let mut lanes = vec![
-        Lane::new(SAFETY_DISTANCE, Cross::First),
-        Lane::new(SAFETY_DISTANCE, Cross::Second),
-        Lane::new(SAFETY_DISTANCE, Cross::Third),
-        Lane::new(SAFETY_DISTANCE, Cross::Fourth),
-    ];
-
-    let mut id = 0;
-
-    //adding bg img instead of color
-    let texture_creator = canvas.texture_creator();
-    let background_texture = texture_creator.load_texture("./assets/road.jpg").unwrap();
-    
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
-    let mut i = 0;
+    let mut rng = rand::thread_rng();
+    let mut smart_road = SmartRoad::new();
+    let texture_creator = canvas.texture_creator();
+    let car_texture = texture_creator.load_texture("assets/car.png").unwrap();
+    let city_texture_creator = canvas.texture_creator();
+    let city_texture = city_texture_creator
+        .load_texture("assets/city.png")
+        .unwrap();
+
+    let ttf_context = sdl2::ttf::init().unwrap();
+    let exp_font = ttf_context
+        .load_font(std::path::Path::new("assets/expressway.otf"), 150)
+        .unwrap();
+    let mut is_stats = false;
+    let mut stats = Stats::new();
     'running: loop {
-        i = (i + 1) % 255;
-        canvas.set_draw_color(Color::RGB(55, 64, 5));
-        canvas.clear();
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
-                } => break 'running,
-                _ => {
-                    id += 1;
-                    handle_keyboard_event(&event, &mut lanes, WIDTH as i32, HEIGHT as i32, VEHICULE_WIDTH as i32, id);
+                } => {
+                    if is_stats {
+                        break 'running;
+                    } else {
+                        is_stats = true;
+                        stats = smart_road.stats();
+                    }
                 }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Up),
+                    ..
+                } => {
+                    smart_road.add_vehicle(Vehicle::new(
+                        width,
+                        height,
+                        rng.gen(),
+                        Direction::North,
+                        rng.gen(),
+                    ));
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Down),
+                    ..
+                } => {
+                    smart_road.add_vehicle(Vehicle::new(
+                        width,
+                        height,
+                        rng.gen(),
+                        Direction::South,
+                        rng.gen(),
+                    ));
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Right),
+                    ..
+                } => {
+                    smart_road.add_vehicle(Vehicle::new(
+                        width,
+                        height,
+                        rng.gen(),
+                        Direction::East,
+                        rng.gen(),
+                    ));
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Left),
+                    ..
+                } => {
+                    smart_road.add_vehicle(Vehicle::new(
+                        width,
+                        height,
+                        rng.gen(),
+                        Direction::West,
+                        rng.gen(),
+                    ));
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::R),
+                    ..
+                } => {
+                    smart_road.add_vehicle(Vehicle::new(
+                        width,
+                        height,
+                        rng.gen(),
+                        rng.gen(),
+                        rng.gen(),
+                    ));
+                }
+                _ => {}
             }
         }
-
-        canvas.clear();
-        // The rest of the game loop goes here...
-        
-        // Copy the texture to the canvas
-        canvas.copy(&background_texture, None, None).unwrap();
-
-        // map
-        // draw_map(&mut canvas, WIDTH as i32, HEIGHT as i32, VEHICULE_WIDTH as i32);
-        let copy_lanes =&mut lanes.clone();
-        for lane in &mut lanes {
-            lane.update(&mut canvas, WIDTH as i32, HEIGHT as i32, VEHICULE_WIDTH as i32, VEHICULE_HEIGHT,copy_lanes);
-        };
-
+        if is_stats {
+            stats_layout(&mut canvas, stats, &exp_font, &city_texture);
+        } else {
+            update_layout(&mut canvas, &city_texture);
+            smart_road.regulate(&mut canvas, &car_texture);
+        }
         canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        std::thread::sleep(Duration::from_millis(100));
     }
 }
