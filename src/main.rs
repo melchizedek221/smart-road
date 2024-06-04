@@ -1,13 +1,24 @@
-mod layout;
-mod traffic;
-use layout::*;
+mod intersection;
+mod smart_road;
+mod vehicle;
+mod algo;
+mod manage;
+mod state;
+mod stats;
+pub use intersection::*;
+pub use smart_road::*;
+pub use vehicle::*;
+pub use algo::*;
+pub use manage::*;
+pub use state::*;
+pub use stats::*;
+
 use rand::Rng;
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use std::time::Duration;
-use traffic::*;
 
 fn main() {
     let sdl_context = sdl2::init().unwrap();
@@ -29,10 +40,8 @@ fn main() {
     let mut smart_road = SmartRoad::new();
     let texture_creator = canvas.texture_creator();
     let car_texture = texture_creator.load_texture("assets/car.png").unwrap();
-    let city_texture_creator = canvas.texture_creator();
-    let city_texture = city_texture_creator
-        .load_texture("assets/city.png")
-        .unwrap();
+
+    let background_texture = texture_creator.load_texture("./assets/road.jpg").unwrap();
 
     let ttf_context = sdl2::ttf::init().unwrap();
     let exp_font = ttf_context
@@ -119,9 +128,10 @@ fn main() {
             }
         }
         if is_stats {
-            stats_layout(&mut canvas, stats, &exp_font, &city_texture);
+            stats_layout(&mut canvas, stats, &exp_font);
         } else {
-            update_layout(&mut canvas, &city_texture);
+            // update_layout(&mut canvas, &city_texture);
+            canvas.copy(&background_texture, None, None).unwrap();
             smart_road.regulate(&mut canvas, &car_texture);
         }
         canvas.present();

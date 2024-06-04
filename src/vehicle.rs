@@ -120,6 +120,7 @@ impl Vehicle {
             || self.position.y > self.environment.height
             || self.position.y < -40
     }
+
     pub fn render(&mut self, canvas: &mut WindowCanvas, texture: &Texture) {
         let rect = Rect::new(self.position.x, self.position.y, 40, 40);
         let mut sprite = Rect::new(3, 5, 60, 60);
@@ -132,6 +133,7 @@ impl Vehicle {
         Rect::new(5, 5, 60, 60);
         canvas.copy(texture, sprite, rect).unwrap();
     }
+    
     pub fn get_speed(self) -> u32 {
         match self.speed {
             Speed::High => 30,

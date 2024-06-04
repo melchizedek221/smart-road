@@ -17,8 +17,8 @@ impl SmartRoad {
         }
     }
     
-    pub fn add_vehicle(&mut self, v: Vehicle) {
-        self.intersection.add_vehicle(v);
+    pub fn add_vehicle(&mut self, vehicle: Vehicle) {
+        self.intersection.add_vehicle(vehicle);
         self.total_cars += 1;
     }
 
@@ -41,6 +41,7 @@ impl SmartRoad {
         if self.intersection.min_time != u32::MAX {
             min_t = self.intersection.min_time as f32 / 10.0;
         }
+
         Stats {
             total_cars: self.total_cars - self.intersection.waiting_room.len() as u32,
             nbr_passed: self.intersection.nbr_passed_vehicles,
