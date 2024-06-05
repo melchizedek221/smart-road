@@ -1,41 +1,115 @@
 use rand::{Rand, Rng};
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::{Texture, WindowCanvas};
+use sdl2::image::LoadTexture;
+// use sdl2::pixels::Color;
+use sdl2::rect::{Point, Rect};
+use sdl2::render::WindowCanvas;
 
 // vehicle
 #[derive(Clone, Debug, Copy)]
 pub struct Vehicle {
-    pub position: Position,
+    pub position: Point,
     pub turn: Turning,
     pub direction: Direction,
     pub speed: Speed,
-    pub environment: Environment,
-    pub pivot: Pivot,
-    pub color: Color,
     pub time: u32,
+    pub is_changed_direction: bool,
 }
 
 impl Vehicle {
-    pub fn new(w: u32, h: u32, turn: Turning, direction: Direction, speed: Speed) -> Self {
-        let mut color = Color::MAGENTA;
-        match direction {
-            Direction::North => color = Color::GREEN,
-            Direction::South => color = Color::YELLOW,
-            Direction::West => color = Color::CYAN,
-            Direction::East => {}
-        }
-        Vehicle {
-            position: Position::new(w, h, turn, direction),
+    pub fn new(turn: Turning, direction: Direction, speed: Speed) -> Self {
+        let (canvas_width, canvas_height, vehicle_width) = (800, 800, 25);
+        let position = Vehicle::spawn(direction, turn, canvas_width, canvas_height, vehicle_width);
+
+        Self {
+            position,
             turn,
             direction,
             speed,
-            environment: Environment::new(w as i32, h as i32),
-            pivot: Pivot::new(Environment::new(w as i32, h as i32), direction, turn),
-            color,
             time: 0,
+            is_changed_direction: false,
         }
     }
+
+    pub fn spawn(
+        direction: Direction,
+        turn: Turning,
+        canvas_width: i32,
+        canvas_height: i32,
+        vehicle_width: i32,
+    ) -> Point {
+        let mut position = Point::new(0, 0);
+
+        match direction {
+            Direction::North => {
+                match turn {
+                    Turning::Left => {
+                        position.x = (canvas_width / 2) + vehicle_width / 2 - 4;
+                        position.y = canvas_height;
+                    },
+                    Turning::Straight => {
+                        position.x = (canvas_width / 2) + vehicle_width / 2 + 40;
+                        position.y = canvas_height;
+                    },
+                    Turning::Right => {
+                        position.x = (canvas_width / 2) + vehicle_width / 2 + 84;
+                        position.y = canvas_height;
+                    }
+                }
+            }
+            Direction::South => {
+                // println!("doooooone");
+                match turn {
+                    Turning::Left => {
+                        position.x = (canvas_width / 2) - 2 * vehicle_width + vehicle_width / 2 + 4;
+                        position.y = -vehicle_width;
+                    },
+                    Turning::Straight => {
+                        position.x = (canvas_width / 2) - 2 * vehicle_width + vehicle_width / 2 - 40;
+                        position.y = -vehicle_width;
+                    },
+                    Turning::Right => {
+                        position.x = (canvas_width / 2) - 2 * vehicle_width + vehicle_width / 2 - 84;
+                        position.y = -vehicle_width;
+                    }
+                }
+            }
+            Direction::West => {
+                match turn {
+                    Turning::Left => {
+                        position.x = canvas_width;
+                        position.y = canvas_height / 2 - 2 * vehicle_width + vehicle_width / 2 + 4;
+                    },
+                    Turning::Straight => {
+                        position.x = canvas_width;
+                        position.y = canvas_height / 2 - 2 * vehicle_width + vehicle_width / 2 - 40;
+                    },
+                    Turning::Right => {
+                        position.x = canvas_width;
+                        position.y = canvas_height / 2 - 2 * vehicle_width + vehicle_width / 2 - 84;
+                    }
+                }
+            }
+            Direction::East => {
+                match turn {
+                    Turning::Left => {
+                        position.x = -vehicle_width;
+                        position.y = canvas_height / 2 + vehicle_width / 2 - 4;
+                    },
+                    Turning::Straight => {
+                        position.x = -vehicle_width;
+                        position.y = canvas_height / 2 + vehicle_width / 2 + 40;
+                    },
+                    Turning::Right => {
+                        position.x = -vehicle_width;
+                        position.y = canvas_height / 2 + vehicle_width / 2 + 84;
+                    }
+                }
+            }
+        }
+
+        position
+    }
+
     pub fn accelerate(&mut self) {
         match self.speed {
             Speed::No => self.speed = Speed::Low,
@@ -44,6 +118,7 @@ impl Vehicle {
             Speed::High => {}
         }
     }
+
     pub fn deaccelerate(&mut self) {
         match self.speed {
             Speed::No => {}
@@ -53,85 +128,127 @@ impl Vehicle {
         }
     }
 
-    pub fn drive(&mut self) {
+
+    pub fn drive(
+        &mut self,
+        // canvas: &mut WindowCanvas
+    ) {
         match self.direction {
-            Direction::North => self.position.y -= self.speed as i32,
-            Direction::South => self.position.y += self.speed as i32,
-            Direction::East => self.position.x += self.speed as i32,
-            Direction::West => self.position.x -= self.speed as i32,
-        }
-        match self.turn {
-            Turning::Straight => {}
-            Turning::Left => {
-                if self.is_at_pivot() {
-                    self.turn = Turning::Straight;
-                    self.position = self.pivot.position;
-                    match self.direction {
-                        Direction::North => {
-                            self.direction = Direction::West;
-                        }
-                        Direction::South => {
-                            self.direction = Direction::East;
-                        }
-                        Direction::East => {
-                            self.direction = Direction::North;
-                        }
-                        Direction::West => {
-                            self.direction = Direction::South;
-                        }
-                    }
+            Direction::North=> {
+                if !self.is_changed_direction {
+                    self.position.y -= self.speed as i32;
+                } else {
+                    let d = match self.turn {
+                        Turning::Left => -1,
+                        Turning::Straight => return,
+                        Turning::Right => 1,
+                    };
+                    
+                    self.position.x += d * self.speed as i32;
+                }
+                if self.turn == Turning::Left && self.position.y < 353 {
+                    self.is_changed_direction = true;
+                } else if self.turn == Turning::Right && self.position.y < 500{
+                    self.is_changed_direction = true;
                 }
             }
-            Turning::Right => {
-                if self.is_at_pivot() {
-                    self.turn = Turning::Straight;
-                    self.position = self.pivot.position;
-                    match self.direction {
-                        Direction::North => {
-                            self.direction = Direction::East;
-                        }
-                        Direction::South => {
-                            self.direction = Direction::West;
-                        }
-                        Direction::East => {
-                            self.direction = Direction::South;
-                        }
-                        Direction::West => {
-                            self.direction = Direction::North;
-                        }
-                    }
+            
+            Direction::South => {
+                if !self.is_changed_direction {
+                    self.position.y += self.speed as i32;
+                } else {
+                    let d = match self.turn {
+                        Turning::Left => 1,
+                        Turning::Straight => return,
+                        Turning::Right => -1,
+                    };
+                    self.position.x += d * self.speed as i32;
+                }
+                if self.turn == Turning::Left && self.position.y > 392 {
+                    self.is_changed_direction = true;
+                } else if self.turn == Turning::Right && self.position.y > 260 {
+                    self.is_changed_direction = true;
+                }
+            }
+
+            Direction::West => {
+                // println!("{:?}", self.turn);
+                if !self.is_changed_direction {
+                    self.position.x -= self.speed as i32;
+                } else {
+                    let d = match self.turn {
+                        Turning::Left => 1,
+                        Turning::Straight => return,
+                        Turning::Right => -1,
+                    };
+                    self.position.y += d * self.speed as i32;
+                }
+                if self.turn == Turning::Left && self.position.x < 353 {
+                    self.is_changed_direction = true;
+                } else if self.turn == Turning::Right && self.position.x < 500 {
+                    self.is_changed_direction = true;
+                }
+            }
+
+            Direction::East => {
+                if !self.is_changed_direction {
+                    self.position.x += self.speed as i32;
+                } else {
+                    let d = match self.turn {
+                        Turning::Left => -1,
+                        Turning::Straight => return,
+                        Turning::Right => 1,
+                    };
+                    self.position.y += d * self.speed as i32;
+                }
+                
+                if self.turn == Turning::Left && self.position.x > 389 {
+                    self.is_changed_direction = true;
+                } else if self.turn == Turning::Right && self.position.x > 250 {
+                    self.is_changed_direction = true;
                 }
             }
         }
-    }
-    pub fn is_at_pivot(self) -> bool {
-        match self.pivot.over {
-            true => {
-                self.position.x >= self.pivot.position.x && self.position.y >= self.pivot.position.y
-            }
-            false => {
-                self.position.x <= self.pivot.position.x && self.position.y <= self.pivot.position.y
-            }
-        }
-    }
-    pub fn is_out(self) -> bool {
-        self.position.x > self.environment.width
-            || self.position.x < -40
-            || self.position.y > self.environment.height
-            || self.position.y < -40
     }
 
-    pub fn render(&mut self, canvas: &mut WindowCanvas, texture: &Texture) {
-        let rect = Rect::new(self.position.x, self.position.y, 40, 40);
-        let mut sprite = Rect::new(3, 5, 60, 60);
-        match self.direction {
-            Direction::South => {}
-            Direction::North => sprite = Rect::new(3, 205, 60, 60),
-            Direction::East => sprite = Rect::new(3, 135, 60, 60),
-            Direction::West => sprite = Rect::new(3, 65, 60, 60),
+
+    pub fn is_out(self) -> bool {
+        self.position.x > 1000
+            || self.position.x < -50
+            || self.position.y > 1000
+            || self.position.y < -50
+    }
+    
+    pub fn render(&mut self, canvas: &mut WindowCanvas) {
+        let rect = Rect::new(self.position.x, self.position.y, 25, 50);
+        let rect2 = Rect::new(self.position.x, self.position.y, 50, 25);
+
+        let texture_creator = canvas.texture_creator();
+
+        // Load the vehicle textures
+        let vehicle_texture_up = texture_creator.load_texture("./assets/car-up.png").unwrap();
+        let vehicle_texture_down = texture_creator.load_texture("./assets/car-down.png").unwrap();
+        let vehicle_texture_left = texture_creator.load_texture("./assets/car-left.png").unwrap();
+        let vehicle_texture_right = texture_creator.load_texture("./assets/car-right.png").unwrap();
+
+        // Default angle is 0
+        let mut angle = 0.0;
+
+        // Only change angle if the direction has changed
+        if self.is_changed_direction {
+            angle = match self.turn {
+                Turning::Left => -90.0,
+                Turning::Right => 90.0,
+                Turning::Straight => 0.0,
+            };
         }
-        Rect::new(5, 5, 60, 60);
-        canvas.copy(texture, sprite, rect).unwrap();
+
+        match self.direction {
+            Direction::South => canvas.copy_ex(&vehicle_texture_down, None, rect, angle, None, false, false).unwrap(),
+            Direction::North => canvas.copy_ex(&vehicle_texture_up, None, rect, angle, None, false, false).unwrap(),
+            Direction::East => canvas.copy_ex(&vehicle_texture_right, None, rect2, angle, None, false, false).unwrap(),
+            Direction::West => canvas.copy_ex(&vehicle_texture_left, None, rect2, angle, None, false, false).unwrap(),
+        }
     }
     
     pub fn get_speed(self) -> u32 {
@@ -140,86 +257,6 @@ impl Vehicle {
             Speed::Normal => 20,
             Speed::Low => 10,
             Speed::No => 0,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Copy)]
-pub struct Pivot {
-    position: Position,
-    over: bool,
-}
-
-impl Pivot {
-    pub fn new(env: Environment, dir: Direction, turn: Turning) -> Self {
-        let mut pos = env.center;
-        let mut over = true;
-        match turn {
-            Turning::Straight => {}
-            Turning::Right => match dir {
-                Direction::North => {
-                    pos = Position {
-                        x: (env.center.x + 80),
-                        y: (env.center.y + 80),
-                    };
-                    over = false;
-                }
-                Direction::South => {
-                    pos = Position {
-                        x: (env.center.x - 120),
-                        y: (env.center.y - 120),
-                    };
-                    over = true;
-                }
-                Direction::West => {
-                    pos = Position {
-                        x: (env.center.x + 80),
-                        y: (env.center.y - 120),
-                    };
-                    over = false;
-                }
-                Direction::East => {
-                    pos = Position {
-                        x: (env.center.x - 120),
-                        y: (env.center.y + 80),
-                    };
-                    over = true;
-                }
-            },
-            Turning::Left => match dir {
-                Direction::North => {
-                    pos = Position {
-                        x: (env.center.x),
-                        y: (env.center.y - 40),
-                    };
-                    over = false;
-                }
-                Direction::South => {
-                    pos = Position {
-                        x: (env.center.x - 40),
-                        y: (env.center.y),
-                    };
-                    over = true;
-                }
-                Direction::West => {
-                    pos = Position {
-                        x: (env.center.x - 40),
-                        y: (env.center.y - 40),
-                    };
-                    over = false;
-                }
-                Direction::East => {
-                    pos = Position {
-                        x: (env.center.x),
-                        y: (env.center.y),
-                    };
-                    over = true;
-                }
-            },
-        }
-        Pivot {
-            position: pos,
-            over,
         }
     }
 }
@@ -268,9 +305,9 @@ impl Rand for Direction {
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum Speed {
     No = 0,
-    Low = 10,
-    Normal = 20,
-    High = 30,
+    Low = 7,
+    Normal = 15,
+    High = 25,
 }
 
 impl Rand for Speed {
@@ -279,63 +316,6 @@ impl Rand for Speed {
             0 => Speed::Low,
             1 => Speed::Normal,
             _ => Speed::High,
-        }
-    }
-}
-
-//position
-#[derive(Clone, Copy, Debug)]
-pub struct Position {
-    pub x: i32,
-    pub y: i32,
-}
-
-impl Position {
-    pub fn new(w: u32, h: u32, turn: Turning, dir: Direction) -> Self {
-        let mut n = 0;
-        match turn {
-            Turning::Left => {}
-            Turning::Right => n += 80,
-            Turning::Straight => n += 40,
-        }
-        match dir {
-            Direction::North => Position {
-                x: (w as i32 / 2 + n),
-                y: (h as i32),
-            },
-            Direction::West => Position {
-                x: (w as i32),
-                y: (h as i32 / 2 - 40 - n),
-            },
-            Direction::South => Position {
-                x: (w as i32 / 2 - 40 - n),
-                y: (-40),
-            },
-            Direction::East => Position {
-                x: (-40),
-                y: (w as i32 / 2 + n),
-            },
-        }
-    }
-}
-
-// environment
-#[derive(Clone, Copy, Debug)]
-pub struct Environment {
-    pub width: i32,
-    pub height: i32,
-    pub center: Position,
-}
-
-impl Environment {
-    pub fn new(width: i32, height: i32) -> Environment {
-        Environment {
-            width,
-            height,
-            center: Position {
-                x: width / 2,
-                y: height / 2,
-            },
         }
     }
 }

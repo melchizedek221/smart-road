@@ -1,4 +1,4 @@
-use sdl2::render::{Texture, WindowCanvas};
+use sdl2::render::WindowCanvas;
 
 use super::{Intersection, Vehicle};
 
@@ -17,18 +17,18 @@ impl SmartRoad {
         }
     }
     
-    pub fn add_vehicle(&mut self, vehicle: Vehicle) {
-        self.intersection.add_vehicle(vehicle);
+    pub fn add_vehicle(&mut self, vehicle: Vehicle, canvas: &mut WindowCanvas) {
+        self.intersection.add_vehicle(vehicle, canvas);
         self.total_cars += 1;
     }
 
-    pub fn regulate(&mut self, canvas: &mut WindowCanvas, texture: &Texture) {
-        self.intersection.waiting();
+    pub fn regulate(&mut self, canvas: &mut WindowCanvas) {
+        self.intersection.waiting(canvas);
         if self.intersection.average_velocity() != 0.0 {
             self.average_velocity =
                 (self.intersection.average_velocity() as f32 + self.average_velocity) / 2.0;
         }
-        self.intersection.regulate(canvas, texture);
+        self.intersection.regulate(canvas);
         self.intersection.moves.drop_state();
     }
 

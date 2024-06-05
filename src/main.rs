@@ -32,14 +32,14 @@ fn main() {
     let mut canvas = window.into_canvas().build().unwrap();
 
     canvas.set_draw_color(Color::WHITE);
-    let (width, height) = canvas.output_size().unwrap();
+    // let (width, height) = canvas.output_size().unwrap();
     canvas.clear();
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut rng = rand::thread_rng();
     let mut smart_road = SmartRoad::new();
     let texture_creator = canvas.texture_creator();
-    let car_texture = texture_creator.load_texture("assets/car.png").unwrap();
+    // let car_texture = texture_creator.load_texture("assets/car.png").unwrap();
 
     let background_texture = texture_creator.load_texture("./assets/road.jpg").unwrap();
 
@@ -69,60 +69,50 @@ fn main() {
                     ..
                 } => {
                     smart_road.add_vehicle(Vehicle::new(
-                        width,
-                        height,
                         rng.gen(),
                         Direction::North,
                         rng.gen(),
-                    ));
+                    ), &mut canvas);
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::Down),
                     ..
                 } => {
                     smart_road.add_vehicle(Vehicle::new(
-                        width,
-                        height,
                         rng.gen(),
                         Direction::South,
                         rng.gen(),
-                    ));
+                    ), &mut canvas);
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::Right),
                     ..
                 } => {
                     smart_road.add_vehicle(Vehicle::new(
-                        width,
-                        height,
                         rng.gen(),
                         Direction::East,
                         rng.gen(),
-                    ));
+                    ), &mut canvas);
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::Left),
                     ..
                 } => {
                     smart_road.add_vehicle(Vehicle::new(
-                        width,
-                        height,
                         rng.gen(),
                         Direction::West,
                         rng.gen(),
-                    ));
+                    ), &mut canvas);
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::R),
                     ..
                 } => {
                     smart_road.add_vehicle(Vehicle::new(
-                        width,
-                        height,
                         rng.gen(),
                         rng.gen(),
                         rng.gen(),
-                    ));
+                    ), &mut canvas);
                 }
                 _ => {}
             }
@@ -132,7 +122,7 @@ fn main() {
         } else {
             // update_layout(&mut canvas, &city_texture);
             canvas.copy(&background_texture, None, None).unwrap();
-            smart_road.regulate(&mut canvas, &car_texture);
+            smart_road.regulate(&mut canvas);
         }
         canvas.present();
         std::thread::sleep(Duration::from_millis(100));

@@ -1,5 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
+use sdl2::render::WindowCanvas;
+
 use crate::{Moves, Vehicle};
 
 
@@ -27,6 +29,7 @@ impl Algorithm {
         moves: &Moves,
         v: &Vehicle,
         instr: VecDeque<Instruction>,
+        canvas: &mut WindowCanvas
     ) -> VecDeque<Instruction> {
         if v.is_out() || moves.states.len() == 0 {
             return instr;
@@ -86,7 +89,7 @@ impl Algorithm {
             sim_v1.drive();
             m1.drop_state();
             instr1.push_back(Instruction::Accelerate);
-            res = self.algorithm(&m1, &sim_v1, instr1);
+            res = self.algorithm(&m1, &sim_v1, instr1, canvas);
             if res.len() > 0 {
                 self.visited.insert(key, res.clone());
                 return res;
@@ -98,7 +101,7 @@ impl Algorithm {
         sim_v1.drive();
         m1.drop_state();
         instr1.push_back(Instruction::Still);
-        res = self.algorithm(&m1, &sim_v1, instr1);
+        res = self.algorithm(&m1, &sim_v1, instr1, canvas);
         if res.len() > 0 {
             self.visited.insert(key, res.clone());
             return res;
@@ -111,7 +114,7 @@ impl Algorithm {
             sim_v1.drive();
             m1.drop_state();
             instr1.push_back(Instruction::Deaccelerate);
-            res = self.algorithm(&m1, &sim_v1, instr1);
+            res = self.algorithm(&m1, &sim_v1, instr1, canvas);
             if res.len() > 0 {
                 self.visited.insert(key, res.clone());
                 return res;

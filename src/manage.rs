@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use sdl2::render::{Texture, WindowCanvas};
+use sdl2::render::WindowCanvas;
 
 use crate::{Instruction, Vehicle};
 
@@ -18,14 +18,14 @@ impl Managed {
         }
     }
     
-    pub fn follow_instruction(&mut self, canvas: &mut WindowCanvas, texture: &Texture) {
+    pub fn follow_instruction(&mut self, canvas: &mut WindowCanvas) {
         match self.instructions[0] {
             Instruction::Still => {}
             Instruction::Deaccelerate => self.vehicle.deaccelerate(),
             Instruction::Accelerate => self.vehicle.accelerate(),
         }
         self.vehicle.drive();
-        self.vehicle.render(canvas, texture);
+        self.vehicle.render(canvas);
         self.instructions.pop_front();
     }
     

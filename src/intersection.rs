@@ -1,7 +1,7 @@
 use crate::{Algorithm, Instruction, Managed, Moves};
 
 use super::Vehicle;
-use sdl2::render::{Texture, WindowCanvas};
+use sdl2::render::WindowCanvas;
 use std::collections::VecDeque;
 
 pub struct Intersection {
@@ -30,15 +30,15 @@ impl Intersection {
             avg_velocity: 0.0,
         }
     }
-    pub fn waiting(&mut self) {
+    pub fn waiting(&mut self, canvas: &mut WindowCanvas) {
         let list = self.waiting_room.clone();
         self.waiting_room = vec![];
         for v in list {
-            self.add_vehicle(v);
+            self.add_vehicle(v, canvas);
         }
     }
-    pub fn add_vehicle(&mut self, mut v: Vehicle) {
-        let instrs = self.instruct_vehicle(&v);
+    pub fn add_vehicle(&mut self, mut v: Vehicle, canvas: &mut WindowCanvas) {
+        let instrs = self.instruct_vehicle(&v, canvas);
         v.time += 1;
         if instrs.len() == 0 {
             self.waiting_room.push(v);
@@ -47,14 +47,15 @@ impl Intersection {
         self.vehicles.push_back(Managed::new(v, instrs));
     }
 
-    pub fn instruct_vehicle(&mut self, v: &Vehicle) -> VecDeque<Instruction> {
+    pub fn instruct_vehicle(&mut self, v: &Vehicle, canvas: &mut WindowCanvas) -> VecDeque<Instruction> {
         let mut algo = Algorithm::new();
-        let mut res = algo.algorithm(&self.moves, v, VecDeque::new());
+        let mut res = algo.algorithm(&self.moves, v, VecDeque::new(), canvas);
         if res.len() == 0 && self.moves.states.len() > 0 {
             return VecDeque::new();
         }
         let mut sim_v = v.clone();
         let mut ix = 0;
+
         while !sim_v.is_out() {
             let x = sim_v.position.x / 2;
             let y = sim_v.position.y / 2;
@@ -95,7 +96,7 @@ impl Intersection {
         res
     }
     
-    pub fn regulate(&mut self, canvas: &mut WindowCanvas, texture: &Texture) {
+    pub fn regulate(&mut self, canvas: &mut WindowCanvas) {
         let mut list = vec![];
         let mut total = 0.0;
         for ix in 0..self.vehicles.len() {
@@ -108,7 +109,7 @@ impl Intersection {
             }
             total += v as f32;
             self.vehicles[ix].vehicle.time += 1;
-            self.vehicles[ix].follow_instruction(canvas, texture);
+            self.vehicles[ix].follow_instruction(canvas);
             if self.vehicles[ix].is_empty_instructions() {
                 self.nbr_passed_vehicles += 1;
                 list.push(ix);
