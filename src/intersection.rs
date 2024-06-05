@@ -141,7 +141,6 @@ impl Intersection {
     }
 }
 
-
 //algo
 #[derive(Clone, Debug)]
 pub enum Instruction {
