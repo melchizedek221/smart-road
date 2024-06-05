@@ -1,12 +1,8 @@
 use std::collections::{HashMap, VecDeque};
-
 use sdl2::render::WindowCanvas;
-
-use crate::{Moves, Vehicle};
-
+use crate::{Moves, Vehicle, Direction, Speed};
 
 #[derive(Clone, Debug)]
-
 pub enum Instruction {
     Deaccelerate,
     Still,
@@ -24,6 +20,62 @@ impl Algorithm {
         }
     }
 
+    fn generate_key(&self, instr: &VecDeque<Instruction>) -> String {
+        let mut algo = (0, 0, 0);
+        for s in instr {
+            match *s {
+                Instruction::Accelerate => algo.0 += 1,
+                Instruction::Still => algo.1 += 1,
+                Instruction::Deaccelerate => algo.2 += 1,
+            }
+        }
+        format!("{}:{}:{}", algo.0, algo.1, algo.2)
+    }
+
+    fn check_occupied(&self, x: i32, y: i32, a1: i32, b1: i32, sim_moves: &mut Moves) -> bool {
+        let (mut xs, mut ys) = (vec![x / 20], vec![y / 20]);
+        if x % 20 != 0 {
+            xs.push((x / 20) + 1);
+        }
+        if y % 20 != 0 {
+            ys.push((y / 20) + 1);
+        }
+        for a in xs {
+            for b in &ys {
+                if sim_moves.states[0].is_occupied(a as usize, *b as usize)
+                    || sim_moves.states[0].is_occupied((a + a1) as usize, (*b + b1) as usize) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn execute_and_check(
+        &mut self,
+        moves: &Moves,
+        v: &Vehicle,
+        instr: &VecDeque<Instruction>,
+        action: Instruction,
+        canvas: &mut WindowCanvas
+    ) -> VecDeque<Instruction> {
+        let mut sim_v = v.clone();
+        let mut m = moves.clone();
+        let mut instr_clone = instr.clone();
+        
+        match action {
+            Instruction::Accelerate => sim_v.accelerate(),
+            Instruction::Deaccelerate => sim_v.deaccelerate(),
+            _ => {}
+        }
+        
+        sim_v.drive();
+        m.drop_state();
+        instr_clone.push_back(action);
+        
+        self.algorithm(&m, &sim_v, instr_clone, canvas)
+    }
+
     pub fn algorithm(
         &mut self,
         moves: &Moves,
@@ -31,96 +83,49 @@ impl Algorithm {
         instr: VecDeque<Instruction>,
         canvas: &mut WindowCanvas
     ) -> VecDeque<Instruction> {
-        if v.is_out() || moves.states.len() == 0 {
+        if v.is_out() || moves.states.is_empty() {
             return instr;
         }
-        let mut algo = (0, 0, 0);
-        for s in &instr {
-            match *s {
-                Instruction::Accelerate => algo.0 += 1,
-                Instruction::Still => algo.1 += 1,
-                Instruction::Deaccelerate => algo.2 += 1,
-            }
+
+        let key = self.generate_key(&instr);
+        if let Some(cached_res) = self.visited.get(&key) {
+            return cached_res.clone();
         }
-        let key = format!("{}:{}:{}", algo.0, algo.1, algo.2);
-        if self.visited.contains_key(&key) {
-            let mut res = VecDeque::new();
-            match self.visited.get(&key) {
-                Some(v) => res = v.clone(),
-                None => {}
-            }
-            return res;
+
+        let (x, y) = (v.position.x / 2, v.position.y / 2);
+        let (a1, b1) = match v.direction {
+            Direction::North => (0, -1),
+            Direction::South => (0, 1),
+            Direction::East => (1, 0),
+            Direction::West => (-1, 0),
+        };
+
+        if self.check_occupied(x, y, a1, b1, &mut moves.clone()) {
+            return VecDeque::new();
         }
-        let x = v.position.x / 2;
-        let y = v.position.y / 2;
-        let (mut xs, mut ys) = (vec![x / 20], vec![y / 20]);
-        let mut sim_moves = moves.clone();
-        if x % 20 != 0 {
-            xs.push((x / 20) + 1);
-        }
-        if y % 20 != 0 {
-            ys.push((y / 20) + 1);
-        }
-        let (mut a1, mut b1) = (0, 0);
-        match v.direction {
-            super::Direction::North => b1 -= 1,
-            super::Direction::South => b1 += 1,
-            super::Direction::East => a1 += 1,
-            super::Direction::West => a1 -= 1,
-        }
-        for a in xs {
-            for b in &ys {
-                let mut ok = sim_moves.states[0].is_occupied(a as usize, *b as usize);
-                if ok {
-                    return VecDeque::new();
-                }
-                ok = sim_moves.states[0].is_occupied((a + a1) as usize, (*b + b1) as usize);
-                if ok {
-                    return VecDeque::new();
-                }
-            }
-        }
-        let mut sim_v1 = v.clone();
-        let mut m1 = moves.clone();
-        let mut instr1 = instr.clone();
-        let mut res: VecDeque<Instruction>;
-        if v.speed != super::Speed::High {
-            sim_v1.accelerate();
-            sim_v1.drive();
-            m1.drop_state();
-            instr1.push_back(Instruction::Accelerate);
-            res = self.algorithm(&m1, &sim_v1, instr1, canvas);
-            if res.len() > 0 {
+
+        if v.speed != Speed::High {
+            let res = self.execute_and_check(moves, v, &instr, Instruction::Accelerate, canvas);
+            if !res.is_empty() {
                 self.visited.insert(key, res.clone());
                 return res;
             }
         }
-        sim_v1 = v.clone();
-        m1 = moves.clone();
-        instr1 = instr.clone();
-        sim_v1.drive();
-        m1.drop_state();
-        instr1.push_back(Instruction::Still);
-        res = self.algorithm(&m1, &sim_v1, instr1, canvas);
-        if res.len() > 0 {
+
+        let res = self.execute_and_check(moves, v, &instr, Instruction::Still, canvas);
+        if !res.is_empty() {
             self.visited.insert(key, res.clone());
             return res;
         }
-        if v.speed != super::Speed::No {
-            sim_v1 = v.clone();
-            m1 = moves.clone();
-            instr1 = instr.clone();
-            sim_v1.deaccelerate();
-            sim_v1.drive();
-            m1.drop_state();
-            instr1.push_back(Instruction::Deaccelerate);
-            res = self.algorithm(&m1, &sim_v1, instr1, canvas);
-            if res.len() > 0 {
+
+        if v.speed != Speed::No {
+            let res = self.execute_and_check(moves, v, &instr, Instruction::Deaccelerate, canvas);
+            if !res.is_empty() {
                 self.visited.insert(key, res.clone());
                 return res;
             }
         }
-        self.visited.insert(key, res.clone());
-        res
+
+        VecDeque::new()
     }
 }

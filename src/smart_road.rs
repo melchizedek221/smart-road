@@ -1,3 +1,4 @@
+use std::time::{Duration, Instant};
 use sdl2::render::WindowCanvas;
 
 use super::{Intersection, Vehicle};
@@ -6,6 +7,8 @@ pub struct SmartRoad {
     pub intersection: Intersection,
     total_cars: u32,
     average_velocity: f32,
+    last_add_time: Instant, 
+    add_interval: Duration, 
 }
 
 impl SmartRoad {
@@ -14,12 +17,21 @@ impl SmartRoad {
             intersection: Intersection::new(),
             total_cars: 0,
             average_velocity: 0.0,
+            last_add_time: Instant::now(), 
+            add_interval: Duration::from_millis(500), 
         }
     }
-    
+
+    pub fn can_add_vehicle(&self) -> bool {
+        self.last_add_time.elapsed() >= self.add_interval
+    }
+
     pub fn add_vehicle(&mut self, vehicle: Vehicle, canvas: &mut WindowCanvas) {
-        self.intersection.add_vehicle(vehicle, canvas);
-        self.total_cars += 1;
+        if self.can_add_vehicle() {
+            self.intersection.add_vehicle(vehicle, canvas);
+            self.total_cars += 1;
+            self.last_add_time = Instant::now();
+        }
     }
 
     pub fn regulate(&mut self, canvas: &mut WindowCanvas) {
@@ -53,6 +65,8 @@ impl SmartRoad {
         }
     }
 }
+
+
 #[derive(Clone, Debug, Copy)]
 pub struct Stats {
     pub total_cars: u32,

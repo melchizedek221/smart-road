@@ -57,7 +57,6 @@ impl Vehicle {
                 }
             }
             Direction::South => {
-                // println!("doooooone");
                 match turn {
                     Turning::Left => {
                         position.x = (canvas_width / 2) - 2 * vehicle_width + vehicle_width / 2 + 4;
@@ -172,7 +171,6 @@ impl Vehicle {
             }
 
             Direction::West => {
-                // println!("{:?}", self.turn);
                 if !self.is_changed_direction {
                     self.position.x -= self.speed as i32;
                 } else {
@@ -210,7 +208,6 @@ impl Vehicle {
             }
         }
     }
-
 
     pub fn is_out(self) -> bool {
         self.position.x > 1000
@@ -281,7 +278,6 @@ impl Rand for Turning {
 }
 
 // direction
-
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum Direction {
     North,
@@ -305,9 +301,9 @@ impl Rand for Direction {
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum Speed {
     No = 0,
-    Low = 7,
-    Normal = 15,
-    High = 25,
+    Low = 10,
+    Normal = 20,
+    High = 30,
 }
 
 impl Rand for Speed {
