@@ -484,10 +484,6 @@ impl Vehicle {
                 if self.is_out() {
                     self.velocity = VELO_2;
                 }
-                               
-                // if self.position.y >= 242 && self.position.y <= 243{
-                //     stats.vehicpass += 1;
-                // }
                 stats.velocities.push(self.velocity as f64)
             }
             Route::Left => {
@@ -542,10 +538,6 @@ impl Vehicle {
                 if self.is_out() {
                     self.velocity = VELO_2;
                 }
-                
-                // if self.position.x >= 508 && self.position.x <= 509{
-                //     stats.vehicpass += 1;
-                // }
                 stats.velocities.push(self.velocity as f64)
             }
             Route::Right => {
@@ -603,6 +595,7 @@ impl Vehicle {
             }
         }
 
+        // println!("positions: {:?}", self.position);
         //close calls
         for other in all_vehicles.iter() {
             if self.id != other.id {
@@ -614,7 +607,6 @@ impl Vehicle {
                 }
             }
         }
-
         stats.update_stats();
         self.check_and_increment_pass_count(stats);
     }
@@ -623,33 +615,38 @@ impl Vehicle {
     fn check_and_increment_pass_count(&self, stats: &mut Stats) {
         match self.route {
             Route::Up => {
-                if self.position.y <= 508 && self.position.y >= 507 {
+                if self.position.y <= 510 && self.position.y >= 500 {
                     stats.vehicpass += 1;
                 }
             },
             Route::Down => {
-                if self.position.y >= 242 && self.position.y <= 243 {
+                if self.position.y >= 240 && self.position.y <= 250 {
                     stats.vehicpass += 1;
                 }
             },
             Route::Left => {
-                if self.position.x >= 508 && self.position.x <= 509 {
+                if self.position.x >= 510 && self.position.x <= 520 {
                     stats.vehicpass += 1;
                 }
             },
             Route::Right => {
-                if self.position.x >= 242 && self.position.x <= 243 {
+                if self.position.x >= 240 && self.position.x <= 250 {
                     stats.vehicpass += 1;
                 }
             },
         }
     }
 
+    
     pub fn get_duration_in_seconds(&self) -> f64 {
         let duration = self.exit_time.unwrap().duration_since(self.entry_time);
         duration.as_secs_f64()
     }
 }
+
+// fn passed_int(p1: Point) -> bool {
+//     p1.x >= 509 && p1.x <= 509 || p1.y <= 242 && p1.y >= 243
+// }
 
 
 pub fn handle_keyboard_event(
