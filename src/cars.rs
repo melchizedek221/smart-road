@@ -60,14 +60,14 @@ impl Vehicle {
             time: Instant::now(),
             distance: 0.0,
             safe_distance: 43.0,
-            // lane: rand::thread_rng().gen_range(1..4), //1 left 2 middle 3 right
+            lane: rand::thread_rng().gen_range(1..4), //1 left 2 middle 3 right
             angle: 0.0,
             waiting: false,
             statut: false,
             entry_time: Instant::now(),
             exit_time: None,
             duration: 0.0,
-            lane: 2,
+            // lane: 2,
         }
     }
 
