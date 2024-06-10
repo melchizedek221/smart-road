@@ -1,128 +1,95 @@
-mod intersection;
-mod smart_road;
-mod vehicle;
-mod manage;
-mod state;
-mod stats;
-pub use intersection::*;
-pub use smart_road::*;
-pub use vehicle::*;
-pub use manage::*;
-pub use state::*;
-pub use stats::*;
-
-use rand::Rng;
+use sdl2::{self, image::LoadTexture};
 use sdl2::event::Event;
-use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use std::time::Duration;
+use statistics::{stats_layout, Stats};
 
-fn main() {
+mod cars;
+use cars::handle_keyboard_event;
+
+mod lane;
+use lane::{Lane, Cross};
+
+mod statistics;
+
+pub fn main() {
+    const WIDTH: u32 = 800;
+    const HEIGHT: u32 = 800;
+    const VEHICULE_WIDTH: u32 = 25;
+    const VEHICULE_HEIGHT: i32 = 50;
+    const SAFETY_DISTANCE: i32 = 25;
+
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
+    let ttf_context = sdl2::ttf::init().unwrap();
 
     let window = video_subsystem
-        .window("smart-road", 800, 800)
+        .window("road intersection", WIDTH, HEIGHT)
         .position_centered()
         .build()
         .unwrap();
+
     let mut canvas = window.into_canvas().build().unwrap();
-
-    canvas.set_draw_color(Color::WHITE);
-    // let (width, height) = canvas.output_size().unwrap();
-    canvas.clear();
-    canvas.present();
-    let mut event_pump = sdl_context.event_pump().unwrap();
-    let mut rng = rand::thread_rng();
-    let mut smart_road = SmartRoad::new();
     let texture_creator = canvas.texture_creator();
-    // let car_texture = texture_creator.load_texture("assets/car.png").unwrap();
 
+    // Load the background image
     let background_texture = texture_creator.load_texture("./assets/road.jpg").unwrap();
 
-    let ttf_context = sdl2::ttf::init().unwrap();
-    let exp_font = ttf_context
-        .load_font(std::path::Path::new("assets/expressway.otf"), 150)
-        .unwrap();
-    let mut is_stats = false;
+    // Load the font
+    let font_path = "./assets/expressway.otf"; // Replace with the path to your font file
+    let font = ttf_context.load_font(font_path, 128).unwrap();
+
+    // Initialize lanes
+    let mut lanes = vec![
+        Lane::new(SAFETY_DISTANCE, Cross::First),
+        Lane::new(SAFETY_DISTANCE, Cross::Second),
+        Lane::new(SAFETY_DISTANCE, Cross::Third),
+        Lane::new(SAFETY_DISTANCE, Cross::Fourth),
+    ];
     let mut stats = Stats::new();
+
+
+    let mut event_pump = sdl_context.event_pump().unwrap();
+    let mut id = 0;
+    let mut i = 0;
+    let mut is_stats = false;
+
     'running: loop {
+        i = (i + 1) % 255;
+        canvas.set_draw_color(Color::RGB(55, 64, 5));
+        canvas.clear();
+
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => {
+                Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     if is_stats {
                         break 'running;
                     } else {
                         is_stats = true;
-                        stats = smart_road.stats();
                     }
                 }
-                Event::KeyDown {
-                    keycode: Some(Keycode::Up),
-                    ..
-                } => {
-                    smart_road.add_vehicle(Vehicle::new(
-                        rng.gen(),
-                        Direction::North,
-                        rng.gen(),
-                    ), &mut canvas);
+                _ => {
+                    id += 1;
+                    handle_keyboard_event(&event, &mut lanes, WIDTH as i32, HEIGHT as i32, VEHICULE_WIDTH as i32, id);
                 }
-                Event::KeyDown {
-                    keycode: Some(Keycode::Down),
-                    ..
-                } => {
-                    smart_road.add_vehicle(Vehicle::new(
-                        rng.gen(),
-                        Direction::South,
-                        rng.gen(),
-                    ), &mut canvas);
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::Right),
-                    ..
-                } => {
-                    smart_road.add_vehicle(Vehicle::new(
-                        rng.gen(),
-                        Direction::East,
-                        rng.gen(),
-                    ), &mut canvas);
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::Left),
-                    ..
-                } => {
-                    smart_road.add_vehicle(Vehicle::new(
-                        rng.gen(),
-                        Direction::West,
-                        rng.gen(),
-                    ), &mut canvas);
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::R),
-                    ..
-                } => {
-                    smart_road.add_vehicle(Vehicle::new(
-                        rng.gen(),
-                        rng.gen(),
-                        rng.gen(),
-                    ), &mut canvas);
-                }
-                _ => {}
             }
         }
+
         if is_stats {
-            stats_layout(&mut canvas, stats, &exp_font);
+            stats_layout(&mut canvas, &mut stats, &font);
         } else {
-            // update_layout(&mut canvas, &city_texture);
+            // Render the game
             canvas.copy(&background_texture, None, None).unwrap();
-            smart_road.regulate(&mut canvas);
+
+            let mut copy_lanes = lanes.clone();
+            for lane in &mut lanes {
+                lane.update(&mut stats, &mut canvas, WIDTH as i32, HEIGHT as i32, VEHICULE_WIDTH as i32, VEHICULE_HEIGHT, &mut copy_lanes);
+            }
         }
+
         canvas.present();
-        std::thread::sleep(Duration::from_millis(100));
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 }
+
