@@ -55,7 +55,7 @@ impl Lane {
         let vehicle_texture_up = texture_creator.load_texture("./assets/car-up.png").unwrap();
         let vehicle_texture_down = texture_creator.load_texture("./assets/car-down.png").unwrap();
         let vehicle_texture_left = texture_creator.load_texture("./assets/car-left.png").unwrap();
-        let vehicle_texture_right = texture_creator.load_texture("./assets/voiture-de-course.png").unwrap();
+        let vehicle_texture_right = texture_creator.load_texture("./assets/car-right.png").unwrap();
 
         for vehicle in self.vehicles.iter_mut() {
             vehicle.move_forward(stats, lanes,canvas_width, canvas_height, vehicle_width);

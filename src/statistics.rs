@@ -80,12 +80,12 @@ pub fn stats_layout(canvas: &mut WindowCanvas, stats: &mut Stats, font: &Font) {
 
     for i in 0..6 {
         match i {
-            2 => _text = format!("Passed vehicules number: {}", stats.vehicpass),
-            3 => _text = format!("max speed: {} pxs/s", stats.max_speed),
-            4 => _text = format!("min speed: {} psx/s", stats.min_speed),
-            5 => _text = format!("max time: {:.2} s", stats.max_time),
-            6 => _text = format!("Collision: {}", 0),
-            _ => _text = format!("min time: {:.2} s", stats.min_time), 
+            0 => _text = format!("Passed vehicules number: {}", stats.vehicpass),
+            1 => _text = format!("Max speed: {} pxs/s", stats.max_speed),
+            2 => _text = format!("Min speed: {} psx/s", stats.min_speed),
+            3 => _text = format!("Max time: {:.2} s", stats.max_time),
+            4 => _text = format!("Min time: {:.2} s", stats.min_time), 
+            _ => _text = format!("Collisions: {}", 0),
         }
     surface = font
             .render(&_text)

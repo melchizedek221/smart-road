@@ -67,7 +67,6 @@ impl Vehicle {
             entry_time: Instant::now(),
             exit_time: None,
             duration: 0.0,
-            // lane: 2,
         }
     }
 
