@@ -42,8 +42,6 @@ impl Stats {
         
         self.min_time = find_min(&self.durations);
         self.min_speed = find_min(&self.velocities);
-
-
     }
 }
 

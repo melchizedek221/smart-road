@@ -11,9 +11,9 @@ use crate::lane::Lane;
 use crate::statistics::Stats;
 // use crate::statistics::Stats;
 
-const VELO_1: i32 = 2;
-const VELO_2: i32 = 5;
-const VELO_3: i32 = 10;
+const VELO_1: i32 = 3;
+const VELO_2: i32 = 8;
+const VELO_3: i32 = 18;
 #[derive(Debug, Clone)]
 pub struct Vehicle {
     pub id: usize,
@@ -361,21 +361,18 @@ impl Vehicle {
         vehicle_width: i32,
     ) {
 
-        // println!("here {:?}", self.position);
         if self.is_out_of_canv(){
             self.exit_time = Some(Instant::now());
             self.duration = self.get_duration_in_seconds();
-            // vehicles.push(self)
-            // println!("yessss");
-            if self.duration > 1.0 {
+            if self.duration > 2.0 {
                 stats.durations.push(self.duration);
             }
             stats.velocities.push(self.velocity as f64)
         }
 
-        // ANOTHER TEST
-        let mut binding = lanes.clone();
-        let mut all_vehicles: Vec<&mut Vehicle> = binding
+        // // ANOTHER TEST
+        // let mut binding = lanes.clone();
+        let mut all_vehicles: Vec<&mut Vehicle> = lanes
             .iter_mut()
             .flat_map(|lane| lane.vehicles.iter_mut())
             .filter(|vehicle| {
@@ -436,10 +433,6 @@ impl Vehicle {
                 if self.is_out() {
                     self.velocity = VELO_2;
                 }
-                
-                // if self.position.y <= 508 && self.position.y >= 507{
-                //     stats.vehicpass += 1;
-                // }
                 stats.velocities.push(self.velocity as f64)
             }
             Route::Down => {
@@ -631,6 +624,7 @@ impl Vehicle {
 
         self.check_and_increment_pass_count(stats);
     }
+
 
     fn check_and_increment_pass_count(&self, stats: &mut Stats) {
         match self.route {
