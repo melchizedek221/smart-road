@@ -38,6 +38,7 @@ impl Stats {
         // println!("all vecs : {:?}", self.durations);
 
         self.max_time = find_max(&self.durations);
+        // self.max_time = self.durations.iter().max();
         self.max_speed = find_max(&self.velocities);
         
         self.min_time = find_min(&self.durations);

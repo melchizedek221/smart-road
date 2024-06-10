@@ -11,9 +11,9 @@ use crate::lane::Lane;
 use crate::statistics::Stats;
 // use crate::statistics::Stats;
 
-const VELO_1: i32 = 3;
-const VELO_2: i32 = 8;
-const VELO_3: i32 = 18;
+const VELO_1: i32 = 2;
+const VELO_2: i32 = 5;
+const VELO_3: i32 = 10;
 #[derive(Debug, Clone)]
 pub struct Vehicle {
     pub id: usize,
@@ -599,11 +599,6 @@ impl Vehicle {
                 if self.is_out() {
                     self.velocity = VELO_2;
                 }
-                // println!("ve {:?}", self);
-                
-                // if self.position.x >= 242 && self.position.x <= 243{
-                //     stats.vehicpass += 1;
-                // }
                 stats.velocities.push(self.velocity as f64)
             }
         }
@@ -621,7 +616,6 @@ impl Vehicle {
         }
 
         stats.update_stats();
-
         self.check_and_increment_pass_count(stats);
     }
 
